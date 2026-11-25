@@ -42,6 +42,13 @@ button:disabled{opacity:.6;cursor:wait}
 .top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 [hidden]{display:none!important}
 .empty{text-align:center;color:#7a5a6b;padding:20px}
+.thumb{width:64px;height:64px;border-radius:10px;object-fit:cover;border:1px solid var(--line);flex:none;background:#f6e6ee}
+.gift .main{display:flex;gap:12px;align-items:flex-start;flex:1 1 260px;min-width:0}
+.imgbox{border:1px dashed var(--line);border-radius:10px;padding:12px;background:#fdf7fa}
+.imgbox .prev{display:flex;align-items:center;gap:12px;margin-top:10px}
+.imgbox .prev img{width:84px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.hint{font-size:.8rem;color:#7a5a6b;margin:6px 0 0}
+input[type=file]{padding:8px;background:#fff}
 </style>
 </head>
 <body>
@@ -85,6 +92,21 @@ button:disabled{opacity:.6;cursor:wait}
       </div>
       <div class="field"><label for="gNote">Detalle (opcional)</label><input id="gNote" maxlength="200" placeholder="Ej: talla S, color rosado"></div>
       <div class="field"><label for="gUrl">Link de referencia (opcional)</label><input id="gUrl" type="url" maxlength="500" placeholder="https://..."></div>
+      <div class="field">
+        <label>Imagen del regalo (opcional)</label>
+        <div class="imgbox">
+          <label for="gFile" style="text-transform:none;letter-spacing:0">Subir una foto desde tu celular o computadora</label>
+          <input id="gFile" type="file" accept="image/*">
+          <p class="hint" style="text-align:center;margin:8px 0">— o —</p>
+          <label for="gImgUrl" style="text-transform:none;letter-spacing:0">Pegar el link de la imagen</label>
+          <input id="gImgUrl" type="url" maxlength="500" placeholder="https://.../foto.jpg">
+          <p class="hint">Tip: en la página de la tienda, mantén presionada la foto y elige "Copiar dirección de la imagen".</p>
+          <div class="prev" id="imgPrev" hidden>
+            <img id="imgPrevImg" alt="Vista previa">
+            <button type="button" id="imgClear" class="danger">Quitar imagen</button>
+          </div>
+        </div>
+      </div>
       <div class="actions">
         <button class="primary" type="submit" id="saveBtn">Agregar a la lista</button>
         <button type="button" id="cancelBtn" hidden>Cancelar edición</button>
@@ -135,6 +157,8 @@ button:disabled{opacity:.6;cursor:wait}
     if (!gifts.length) { var e = document.createElement('div'); e.className = 'card empty'; e.textContent = 'Aún no hay regalos. Agrega el primero arriba.'; box.appendChild(e); return; }
     gifts.forEach(function (g) {
       var c = document.createElement('div'); c.className = 'card gift';
+      var main = document.createElement('div'); main.className = 'main';
+      if (g.image) { var th = document.createElement('img'); th.className = 'thumb'; th.alt = ''; th.src = g.image; th.addEventListener('error', function () { th.remove(); }); main.appendChild(th); }
       var info = document.createElement('div'); info.className = 'info';
       var t = document.createElement('div'); t.className = 't'; t.textContent = g.title; info.appendChild(t);
       if (g.note) { var n = document.createElement('div'); n.className = 'n'; n.textContent = g.note; info.appendChild(n); }
@@ -153,18 +177,61 @@ button:disabled{opacity:.6;cursor:wait}
         if (confirm('¿Eliminar "' + g.title + '" de la lista?'))
           api('DELETE', '/api/admin/gifts', { id: g.id }).then(load).catch(function (e) { alert(e.message); });
       });
-      c.appendChild(info); c.appendChild(act); box.appendChild(c);
+      main.appendChild(info); c.appendChild(main); c.appendChild(act); box.appendChild(c);
     });
   }
 
+  // ---- Imagen del regalo ----
+  var img = { mode: 'keep', data: null }, hadImage = false;
+  function showPrev(src) {
+    if (src) { $('imgPrevImg').src = src; $('imgPrev').hidden = false; } else { $('imgPrevImg').removeAttribute('src'); $('imgPrev').hidden = true; }
+  }
+  function noImage() { img.mode = hadImage ? 'remove' : 'keep'; img.data = null; showPrev(''); }
+  // Reduce la foto a máx. 900 px y la convierte a JPG liviano antes de enviarla
+  function shrink(file) {
+    return new Promise(function (resolve, reject) {
+      var fr = new FileReader();
+      fr.onerror = function () { reject(new Error('No se pudo leer la imagen')); };
+      fr.onload = function () {
+        var im = new Image();
+        im.onerror = function () { reject(new Error('Ese archivo no parece una imagen')); };
+        im.onload = function () {
+          var max = 900, w = im.naturalWidth, h = im.naturalHeight, k = Math.min(1, max / Math.max(w, h));
+          var cv = document.createElement('canvas'); cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+          var cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(im, 0, 0, cv.width, cv.height);
+          var q = 0.85, out = cv.toDataURL('image/jpeg', q);
+          while (out.length > 600000 && q > 0.4) { q -= 0.1; out = cv.toDataURL('image/jpeg', q); }
+          if (out.length > 650000) reject(new Error('La imagen es muy pesada. Prueba con otra')); else resolve(out);
+        };
+        im.src = fr.result;
+      };
+      fr.readAsDataURL(file);
+    });
+  }
+  $('gFile').addEventListener('change', function () {
+    var f = this.files && this.files[0]; $('formErr').textContent = '';
+    if (!f) return;
+    shrink(f).then(function (d) { img.mode = 'upload'; img.data = d; $('gImgUrl').value = ''; showPrev(d); })
+      .catch(function (err) { $('gFile').value = ''; $('formErr').textContent = err.message; });
+  });
+  $('gImgUrl').addEventListener('input', function () {
+    var v = this.value.trim(); $('gFile').value = '';
+    if (v) { img.mode = 'url'; img.data = null; showPrev(/^https?:\/\//i.test(v) ? v : ''); } else noImage();
+  });
+  $('imgPrevImg').addEventListener('error', function () { if (img.mode === 'url') $('imgPrev').hidden = true; });
+  $('imgClear').addEventListener('click', function () { $('gFile').value = ''; $('gImgUrl').value = ''; noImage(); });
+
   function edit(g) {
+    hadImage = !!g.image; img = { mode: 'keep', data: null }; $('gFile').value = '';
+    var external = g.image && g.image.indexOf('/api/image') !== 0;
+    $('gImgUrl').value = external ? g.image : ''; showPrev(g.image || '');
     $('gId').value = g.id; $('gTitle').value = g.title; $('gIcon').value = g.icon || 'gift';
     $('gNote').value = g.note || ''; $('gUrl').value = g.url || '';
     $('formTitle').textContent = 'Editar regalo'; $('saveBtn').textContent = 'Guardar cambios'; $('cancelBtn').hidden = false;
     window.scrollTo({ top: 0, behavior: 'smooth' }); $('gTitle').focus();
   }
   function resetForm() {
-    $('giftForm').reset(); $('gId').value = ''; $('formErr').textContent = '';
+    $('giftForm').reset(); $('gId').value = ''; $('formErr').textContent = ''; img = { mode: 'keep', data: null }; hadImage = false; showPrev('');
     $('formTitle').textContent = 'Agregar un regalo'; $('saveBtn').textContent = 'Agregar a la lista'; $('cancelBtn').hidden = true;
   }
   $('cancelBtn').addEventListener('click', resetForm);
@@ -174,6 +241,9 @@ button:disabled{opacity:.6;cursor:wait}
     var id = $('gId').value;
     var data = { title: $('gTitle').value, icon: $('gIcon').value, note: $('gNote').value, url: $('gUrl').value };
     if (id) data.id = Number(id);
+    data.image_mode = img.mode;
+    if (img.mode === 'url') data.image_url = $('gImgUrl').value.trim();
+    if (img.mode === 'upload') data.image_data = img.data;
     $('saveBtn').disabled = true; $('formErr').textContent = '';
     api(id ? 'PUT' : 'POST', '/api/admin/gifts', data)
       .then(function () { resetForm(); return load(); })

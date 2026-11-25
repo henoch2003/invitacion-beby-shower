@@ -6,7 +6,7 @@ module.exports = async (req, res) => {
   if (req.method !== 'GET') return send(res, 405, { error: 'Método no permitido' });
   try {
     const gifts = (await listGifts()).map((g) => ({
-      id: g.id, icon: g.icon, title: g.title, note: g.note, url: g.url, taken: !!g.claimed_by,
+      id: g.id, icon: g.icon, title: g.title, note: g.note, url: g.url, image: g.image || null, taken: !!g.claimed_by,
     }));
     send(res, 200, { gifts });
   } catch (e) {

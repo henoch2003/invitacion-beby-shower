@@ -11,6 +11,26 @@ function fields(b) {
   };
 }
 
+// Imagen: 'keep' (no tocar), 'url' (link externo), 'upload' (foto subida), 'remove' (quitar)
+const DATA_URL = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
+function imageOp(b) {
+  const mode = b.image_mode;
+  if (mode === 'url') {
+    const url = cleanUrl(b.image_url);
+    if (!url) return { error: 'El link de la imagen no es válido (debe empezar con https://)' };
+    return { mode, url };
+  }
+  if (mode === 'upload') {
+    const d = b.image_data;
+    if (typeof d !== 'string' || d.length > 700000 || !DATA_URL.test(d)) {
+      return { error: 'La imagen no es válida o es muy pesada. Prueba con otra foto' };
+    }
+    return { mode, data: d };
+  }
+  if (mode === 'remove') return { mode };
+  return { mode: 'keep' };
+}
+
 module.exports = async (req, res) => {
   if (!isAdmin(req)) return send(res, 401, { error: 'No autorizado' });
   try {
@@ -21,7 +41,9 @@ module.exports = async (req, res) => {
     if (req.method === 'POST') {
       const f = fields(b);
       if (!f.title) return send(res, 400, { error: 'Escribe el nombre del regalo' });
-      return send(res, 200, { ok: true, id: await store.addGift(f) });
+      const img = imageOp(b);
+      if (img.error) return send(res, 400, { error: img.error });
+      return send(res, 200, { ok: true, id: await store.addGift(f, img) });
     }
 
     const id = parseInt(b.id, 10);
@@ -30,7 +52,9 @@ module.exports = async (req, res) => {
     if (req.method === 'PUT') {
       const f = fields(b);
       if (!f.title) return send(res, 400, { error: 'Escribe el nombre del regalo' });
-      if (!(await store.updateGift(id, f))) return send(res, 404, { error: 'Ese regalo ya no existe' });
+      const img = imageOp(b);
+      if (img.error) return send(res, 400, { error: img.error });
+      if (!(await store.updateGift(id, f, img))) return send(res, 404, { error: 'Ese regalo ya no existe' });
       return send(res, 200, { ok: true });
     }
 

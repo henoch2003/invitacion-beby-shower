@@ -281,6 +281,12 @@ html,body{color-scheme:only light;forced-color-adjust:none;-webkit-text-size-adj
 .gift-list li.taken .gt{opacity:.5}
 .gift-list li.taken .gt b{text-decoration:line-through}
 .gift-list li.taken svg{opacity:.4}
+.gift-list li.has-img{grid-template-columns:60px minmax(0,1fr) auto}
+.gift-img{width:60px;height:60px;object-fit:cover;border-radius:10px;border:1px solid #e3c9d6;background:#f6e6ee;cursor:zoom-in;display:block}
+.gift-list li.taken .gift-img{opacity:.4}
+#giftZoom{position:fixed;inset:0;z-index:99;background:rgba(40,20,32,.82);display:flex;align-items:center;justify-content:center;padding:18px;cursor:zoom-out}
+#giftZoom[hidden]{display:none}
+#giftZoom img{max-width:100%;max-height:88vh;border-radius:10px;background:#fff}
 .gift-list button{white-space:nowrap;min-height:38px;padding:7px 12px;font-size:.72rem;background:linear-gradient(160deg,#d92d82,#a8165f);color:#fff;border-color:transparent;border-radius:4px}
 .gift-list button:disabled{background:transparent;color:#8c8c94;border:1px solid var(--line);cursor:not-allowed}
 .gift-msg{margin:12px 0 0;min-height:1.2em;font-family:var(--f-body);font-size:.9rem;line-height:1.35;color:#5A2146;max-width:30ch}
@@ -452,6 +458,11 @@ html,body{color-scheme:only light;forced-color-adjust:none;-webkit-text-size-adj
   var picking = null;
   try { gfName.value = localStorage.getItem('guestName') || ''; } catch (x) {}
 
+  var zoom = document.createElement('div'); zoom.id = 'giftZoom'; zoom.hidden = true; zoom.innerHTML = '<img alt="">';
+  zoom.addEventListener('click', function () { zoom.hidden = true; });
+  document.body.appendChild(zoom);
+  function zoomImg(src, alt) { var z = zoom.querySelector('img'); z.src = src; z.alt = alt || ''; zoom.hidden = false; }
+
   function renderGifts(list) {
     giftList.textContent = '';
     if (!list.length) { var e = document.createElement('p'); e.className = 'dress-sub'; e.textContent = 'Pronto agregaremos las opciones. ¡Tu presencia es mi mejor regalo!'; giftList.appendChild(e); return; }
@@ -460,6 +471,13 @@ html,body{color-scheme:only light;forced-color-adjust:none;-webkit-text-size-adj
       var li = document.createElement('li'); if (g.taken) li.className = 'taken';
       li.innerHTML = (ICONS[g.icon] || ICONS.gift) + '<span class="gt"><b></b><small></small></span>';
       li.querySelector('b').textContent = g.title;
+      if (g.image && /^(https?:\/\/|\/api\/image\?)/i.test(g.image)) {
+        var svg = li.querySelector('svg'), im = document.createElement('img');
+        im.className = 'gift-img'; im.alt = g.title; im.loading = 'lazy'; im.referrerPolicy = 'no-referrer';
+        im.addEventListener('error', function () { li.classList.remove('has-img'); if (svg) im.replaceWith(svg); else im.remove(); });
+        im.addEventListener('click', function () { zoomImg(g.image, g.title); });
+        im.src = g.image; li.classList.add('has-img'); if (svg) svg.replaceWith(im);
+      }
       var sm = li.querySelector('small');
       if (g.note) sm.textContent = g.note; else sm.remove();
       if (g.url && /^https?:\/\//i.test(g.url)) {
