@@ -27,7 +27,7 @@
 <title>Baby Shower Aysel Alessia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Jost:wght@400;500&family=Marcellus&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Allura&family=Lobster+Two:ital,wght@1,700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Jost:wght@400;500&family=Marcellus&display=swap" rel="stylesheet">
 <style>
 /* Concepto: tarjeta vertical de papel blanco con acuarela rosada, rosas y destellos dorados; portada con video de sobre y conejita. Una sola vista a la vez dentro de la tarjeta. */
 :root {
@@ -40,6 +40,7 @@
   --gold-l: #e3c27d;
   --line: #dbbd8f;
   --wa: #1b7f4c;
+  --f-name: "Lobster Two", "Lobster", "Pacifico", "Brush Script MT", cursive;
   --f-script: "Allura", "Great Vibes", "Snell Roundhand", "Brush Script MT", cursive;
   --f-cap: "Marcellus", "Cinzel", Georgia, serif;
   --f-serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
@@ -91,14 +92,17 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .shower::before, .shower::after { content: ""; flex: 0 1 6cqw; height: 1px; background: linear-gradient(90deg, transparent, #c9a46a); }
 .shower::after { transform: scaleX(-1); }
 .name {
-  margin: 1cqw 0 0; padding-block: .08em; font-family: var(--f-script); font-weight: 400; font-size: clamp(2.9rem, 15.5cqw, 4.5rem); line-height: 1.1; text-wrap: balance;
-  background: linear-gradient(100deg, #8f2552, #cc4a85 50%, #8a2150); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: var(--berry);
+  position: relative; isolation: isolate; margin: 2.5cqw 0 0; padding: .08em .12em .12em; font-family: var(--f-name); font-style: italic; font-weight: 700;
+  font-size: clamp(2.4rem, 14cqw, 4.1rem); line-height: 1.15; white-space: nowrap; text-align: center;
+  filter: drop-shadow(0 .05em .05em rgba(130, 30, 80, .35));
 }
+.name span { position: relative; z-index: 3; background: linear-gradient(180deg, #d9266f 0%, #aa1050 55%, #7e0b3d 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: #aa1050; }
+/* Contorno blanco + borde dorado alrededor del nombre */
+.name::before, .name::after { content: attr(data-t); position: absolute; inset: 0; padding: inherit; text-align: center; pointer-events: none; }
+.name::before { z-index: 1; color: #d9a640; -webkit-text-stroke: .2em #d9a640; }
+.name::after { z-index: 2; color: #fff; -webkit-text-stroke: .125em #fff; }
 .invite { margin: 4cqw 0 0; max-width: 74cqw; font-weight: 600; font-size: clamp(1.05rem, 4.8cqw, 1.35rem); line-height: 1.38; color: var(--ink); text-wrap: balance; }
-.parents {
-  margin: 1cqw 0 0; padding-block: .08em; font-family: var(--f-script); font-size: clamp(2.3rem, 11.5cqw, 3.3rem); line-height: 1.15;
-  background: linear-gradient(100deg, #8f2552, #cc4a85 50%, #8a2150); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: var(--berry);
-}
+.parents { margin: 1.5cqw 0 0; font-family: var(--f-serif); font-style: italic; font-weight: 600; font-size: clamp(1.4rem, 7.4cqw, 2rem); line-height: 1.25; letter-spacing: .01em; color: #a3235e; }
 
 /* ---------- Fecha ---------- */
 .date { width: 100%; margin-top: 5cqw; display: flex; flex-direction: column; align-items: center; }
@@ -267,7 +271,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
     <section class="view" id="home" aria-label="Invitación">
       <p class="eyebrow">Estás cordialmente invitado(a) al</p>
       <h1 class="shower" aria-label="Baby Shower de Aysel Alessia"><span>Baby Shower</span></h1>
-      <p class="name" aria-hidden="true">Aysel Alessia</p>
+      <p class="name" aria-hidden="true" data-t="Aysel Alessia"><span>Aysel Alessia</span></p>
       <p class="invite">Acompáñanos en este día tan especial junto a sus futuros papás:</p>
       <p class="parents">Julissa y Yordan</p>
 
@@ -540,7 +544,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   document.getElementById('editBtn').addEventListener('click', function () { done.hidden = true; form.hidden = false; document.getElementById('guestName').focus(); });
 
   /* ---------- Música ---------- */
-  var fab = document.getElementById('fab'), audio = new Audio('assets/audio-755fec58.mp3'), playing = false, wanted = false;
+  var fab = document.getElementById('fab'), audio = new Audio('assets/audio-14161c90.mp3'), playing = false, wanted = false;
   audio.loop = true; audio.volume = 0.6; audio.preload = 'auto';
   function setOn(on) { playing = on; fab.classList.toggle('on', on); fab.setAttribute('aria-pressed', on ? 'true' : 'false'); fab.setAttribute('aria-label', on ? 'Pausar música' : 'Reproducir música'); }
   function startMusic() { var p = audio.play(); if (p && p.then) p.then(function () { setOn(true); wanted = true; }, function () { setOn(false); }); }
