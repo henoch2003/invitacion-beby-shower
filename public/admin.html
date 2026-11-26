@@ -16,7 +16,7 @@ h2{font-size:1.1rem;margin:28px 0 10px;color:var(--pink)}
 .sub{margin:0 0 18px;color:#7a5a6b;font-size:.92rem}
 .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px}
 label{display:block;font-size:.78rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--rose);margin:0 0 4px}
-input,select{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+input,select,textarea{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .field{margin-bottom:12px}
 @media(max-width:560px){.row{grid-template-columns:1fr}}
@@ -49,6 +49,15 @@ button:disabled{opacity:.6;cursor:wait}
 .imgbox .prev img{width:84px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
 .hint{font-size:.8rem;color:#7a5a6b;margin:6px 0 0}
 input[type=file]{padding:8px;background:#fff}
+textarea{resize:vertical;min-height:140px;line-height:1.4}
+details.card>summary{cursor:pointer;font-weight:700;color:var(--berry,#a8165f);list-style:revert}
+#bulkPrev{margin:10px 0}
+#bulkPrev ul{margin:6px 0 0;padding:0;list-style:none;max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:8px;background:#fff}
+#bulkPrev li{padding:7px 10px;border-bottom:1px solid #f3dfe8;font-size:.9rem;display:flex;gap:8px;justify-content:space-between;align-items:baseline}
+#bulkPrev li:last-child{border-bottom:0}
+#bulkPrev li small{color:#7a5a6b}
+#bulkPrev li em{font-style:normal;font-size:.72rem;color:#a8165f;white-space:nowrap}
+.linkbtn{background:none;border:0;color:#b3123f;text-decoration:underline;padding:6px 0;font-size:.85rem;min-height:0;cursor:pointer}
 </style>
 </head>
 <body>
@@ -77,6 +86,16 @@ input[type=file]{padding:8px;background:#fff}
       <div class="stat"><b id="sTaken">0</b><span>Ya elegidos</span></div>
       <div class="stat"><b id="sFree">0</b><span>Disponibles</span></div>
     </div>
+
+    <details class="card" id="bulkBox" style="margin-bottom:14px">
+      <summary>Importar varios regalos de una vez</summary>
+      <p class="hint">Pega aquí la lista, <b>un regalo por línea</b>. Puedes copiarla desde WhatsApp, Word o Excel.</p>
+      <div class="field"><textarea id="bulkText" rows="8" placeholder="Pañales talla RN x3&#10;Toallitas húmedas - marca Huggies&#10;Biberón anticólicos&#10;Body de algodón talla 0-3 m"></textarea></div>
+      <p class="hint">Opcional: el detalle va después de &quot; - &quot; (ej: <i>Biberón - 250 ml</i>). Si hay varios iguales, escribe <b>x3</b> al final y se crean 3 regalos para que cada invitado elija uno.</p>
+      <div id="bulkPrev"></div>
+      <button class="primary" id="bulkGo" type="button" disabled>Agregar a la lista</button>
+      <p class="err" id="bulkMsg" role="alert"></p>
+    </details>
 
     <h2 id="formTitle">Agregar un regalo</h2>
     <form class="card" id="giftForm">
@@ -116,6 +135,7 @@ input[type=file]{padding:8px;background:#fff}
 
     <h2>Lista y quién eligió cada regalo</h2>
     <div id="list"></div>
+    <p style="text-align:center;margin-top:18px"><button type="button" id="delAll" class="linkbtn">Borrar toda la lista</button></p>
   </section>
 </div>
 
@@ -235,6 +255,71 @@ input[type=file]{padding:8px;background:#fff}
     $('formTitle').textContent = 'Agregar un regalo'; $('saveBtn').textContent = 'Agregar a la lista'; $('cancelBtn').hidden = true;
   }
   $('cancelBtn').addEventListener('click', resetForm);
+
+  // ---- Importar lista ----
+  var ICON_NAMES = { heart: 'Pañales', drop: 'Baño', onesie: 'Ropa', bottle: 'Biberones', gift: 'Regalo' };
+  function norm(t) { return t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+  function guessIcon(t) {
+    var n = norm(t);
+    if (/biber|mamader|esteriliz|chupon/.test(n)) return 'bottle';
+    if (/panal|pampers|huggies|pannal/.test(n)) return 'heart';
+    if (/toallit|jabon|shampoo|bano|banera|tina|crema|colonia|talco|aceite|higien/.test(n)) return 'drop';
+    if (/\bbody|ropa|enterizo|pelele|mameluco|pijama|conjunto|medias|gorro|mitones|babero|zapatit|vestid|camis|polo\b|pantalon/.test(n)) return 'onesie';
+    return 'gift';
+  }
+  function parseBulk(text) {
+    var out = [];
+    text.split(/\r?\n/).forEach(function (raw) {
+      var line = raw.replace(/[\u200e\u200f]/g, '').trim();
+      if (!line) return;
+      line = line.replace(/^(?:[-*•·▪►»>✔✅☑✓]|\d{1,3}\s*[.)\-:])\s*/u, '').replace(/^[\u{1F300}-\u{1FAFF}\u2600-\u27BF\uFE0F\s]+/u, '').trim();
+      if (!line || /:\s*$/.test(line)) return; // encabezados como "Lista de regalos:"
+      var title = line, note = '';
+      var m = /^(.+?)(?:\t+|\s+[-–—]\s+|\s*\|\s*|:\s+)(.+)$/.exec(line);
+      if (m) { title = m[1].trim(); note = m[2].trim(); }
+      var qty = 1, q;
+      if ((q = /^(\d{1,2})\s*[xX×]\s+(.+)$/.exec(title))) { qty = +q[1]; title = q[2].trim(); }
+      else if ((q = /^(.+?)\s*[xX×]\s*(\d{1,2})$/.exec(title))) { qty = +q[2]; title = q[1].trim(); }
+      else if (note && (q = /^[xX×]\s*(\d{1,2})$/.exec(note))) { qty = +q[1]; note = ''; }
+      if (!title) return;
+      qty = Math.max(1, Math.min(qty, 20));
+      for (var i = 0; i < qty; i++) out.push({ title: title.slice(0, 100), note: note.slice(0, 200), icon: guessIcon(title) });
+    });
+    return out.slice(0, 300);
+  }
+  var bulkItems = [];
+  function bulkPreview() {
+    bulkItems = parseBulk($('bulkText').value);
+    var box = $('bulkPrev'); box.textContent = ''; $('bulkMsg').textContent = '';
+    $('bulkGo').disabled = !bulkItems.length;
+    $('bulkGo').textContent = bulkItems.length ? 'Agregar ' + bulkItems.length + (bulkItems.length === 1 ? ' regalo' : ' regalos') + ' a la lista' : 'Agregar a la lista';
+    if (!bulkItems.length) return;
+    var p = document.createElement('p'); p.className = 'hint'; p.textContent = 'Vista previa (' + bulkItems.length + '):'; box.appendChild(p);
+    var ul = document.createElement('ul');
+    bulkItems.forEach(function (g) {
+      var li = document.createElement('li'), l = document.createElement('span'), t = document.createElement('b');
+      t.textContent = g.title; l.appendChild(t);
+      if (g.note) { var sm = document.createElement('small'); sm.textContent = ' — ' + g.note; l.appendChild(sm); }
+      var em = document.createElement('em'); em.textContent = ICON_NAMES[g.icon] || 'Regalo';
+      li.appendChild(l); li.appendChild(em); ul.appendChild(li);
+    });
+    box.appendChild(ul);
+  }
+  $('bulkText').addEventListener('input', bulkPreview);
+  $('bulkGo').addEventListener('click', function () {
+    if (!bulkItems.length) return;
+    var btn = this; btn.disabled = true; btn.textContent = 'Agregando…'; $('bulkMsg').textContent = '';
+    api('POST', '/api/admin/gifts', { bulk: bulkItems }).then(function (d) {
+      $('bulkText').value = ''; bulkPreview(); $('bulkMsg').style.color = '#1b7f4c'; $('bulkMsg').textContent = '¡Listo! Se agregaron ' + d.added + ' regalos.';
+      return load();
+    }).catch(function (e) { $('bulkMsg').style.color = ''; $('bulkMsg').textContent = e.message; btn.disabled = false; bulkPreview(); });
+  });
+  $('delAll').addEventListener('click', function () {
+    if (!gifts.length) return;
+    if (!window.confirm('¿Borrar TODA la lista (' + gifts.length + ' regalos) y quién eligió cada uno? Esto no se puede deshacer.')) return;
+    if (!window.confirm('Última confirmación: se borrarán todos los regalos.')) return;
+    api('DELETE', '/api/admin/gifts', { all: true }).then(load).catch(function (e) { alert(e.message); });
+  });
 
   $('giftForm').addEventListener('submit', function (e) {
     e.preventDefault();

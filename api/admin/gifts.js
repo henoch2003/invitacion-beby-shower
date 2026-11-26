@@ -38,12 +38,23 @@ module.exports = async (req, res) => {
 
     if (req.method === 'GET') return send(res, 200, { gifts: await store.listGifts() });
 
+    if (req.method === 'POST' && Array.isArray(b.bulk)) {
+      const items = b.bulk.slice(0, 300).map(fields).filter((f) => f.title);
+      if (!items.length) return send(res, 400, { error: 'No hay regalos válidos en la lista' });
+      return send(res, 200, { ok: true, added: await store.addGifts(items) });
+    }
+
     if (req.method === 'POST') {
       const f = fields(b);
       if (!f.title) return send(res, 400, { error: 'Escribe el nombre del regalo' });
       const img = imageOp(b);
       if (img.error) return send(res, 400, { error: img.error });
       return send(res, 200, { ok: true, id: await store.addGift(f, img) });
+    }
+
+    if (req.method === 'DELETE' && b.all === true) {
+      await store.deleteAll();
+      return send(res, 200, { ok: true });
     }
 
     const id = parseInt(b.id, 10);
