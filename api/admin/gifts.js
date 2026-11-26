@@ -39,7 +39,7 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') return send(res, 200, { gifts: await store.listGifts() });
 
     if (req.method === 'POST' && Array.isArray(b.bulk)) {
-      const items = b.bulk.slice(0, 300).map(fields).filter((f) => f.title);
+      const items = b.bulk.slice(0, 300).map((x) => ({ ...fields(x || {}), image: cleanUrl((x || {}).image) })).filter((f) => f.title);
       if (!items.length) return send(res, 400, { error: 'No hay regalos válidos en la lista' });
       return send(res, 200, { ok: true, added: await store.addGifts(items) });
     }

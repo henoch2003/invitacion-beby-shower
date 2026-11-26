@@ -56,6 +56,10 @@ details.card>summary{cursor:pointer;font-weight:700;color:var(--berry,#a8165f);l
 #bulkPrev li{padding:7px 10px;border-bottom:1px solid #f3dfe8;font-size:.9rem;display:flex;gap:8px;justify-content:space-between;align-items:baseline}
 #bulkPrev li:last-child{border-bottom:0}
 #bulkPrev li small{color:#7a5a6b}
+#bulkPrev li .t{display:flex;gap:10px;align-items:center;min-width:0}
+#bulkPrev li img{width:38px;height:38px;border-radius:6px;object-fit:cover;border:1px solid var(--line);flex:none;background:#f6e6ee}
+#bulkPrev li .t span{min-width:0;overflow-wrap:anywhere}
+#bulkPrev li.dup{opacity:.5}
 #bulkPrev li em{font-style:normal;font-size:.72rem;color:#a8165f;white-space:nowrap}
 .linkbtn{background:none;border:0;color:#b3123f;text-decoration:underline;padding:6px 0;font-size:.85rem;min-height:0;cursor:pointer}
 </style>
@@ -89,10 +93,13 @@ details.card>summary{cursor:pointer;font-weight:700;color:var(--berry,#a8165f);l
 
     <details class="card" id="bulkBox" style="margin-bottom:14px">
       <summary>Importar varios regalos de una vez</summary>
-      <p class="hint">Pega aquí la lista, <b>un regalo por línea</b>. Puedes copiarla desde WhatsApp, Word o Excel.</p>
-      <div class="field"><textarea id="bulkText" rows="8" placeholder="Pañales talla RN x3&#10;Toallitas húmedas - marca Huggies&#10;Biberón anticólicos&#10;Body de algodón talla 0-3 m"></textarea></div>
-      <p class="hint">Opcional: el detalle va después de &quot; - &quot; (ej: <i>Biberón - 250 ml</i>). Si hay varios iguales, escribe <b>x3</b> al final y se crean 3 regalos para que cada invitado elija uno.</p>
+      <p class="hint"><b>Opción 1 · Subir tu Excel</b> (.xlsx) o CSV con las columnas <b>Regalo</b>, <b>Imagen</b> (link de la foto), <b>Dónde comprarlo</b> (link de la tienda) y <b>Descripción</b> (opcional). También puedes agregar una columna <b>Cantidad</b>.</p>
+      <div class="field"><input id="bulkFile" type="file" accept=".xlsx,.csv,.tsv,.txt"></div>
+      <p class="hint" style="text-align:center;margin:10px 0">— o —</p>
+      <p class="hint"><b>Opción 2 · Pegar la lista</b>, un regalo por línea. Si copias las filas desde Excel, se toman las mismas columnas. Detalle: <i>Biberón - 250 ml</i>. Varios iguales: <i>Pañales x3</i>.</p>
+      <div class="field"><textarea id="bulkText" rows="6" placeholder="Pañales talla RN x3&#10;Toallitas húmedas - marca Huggies&#10;Biberón anticólicos"></textarea></div>
       <div id="bulkPrev"></div>
+      <label style="display:flex;gap:8px;align-items:center;font-size:.88rem;margin:8px 0;text-transform:none;letter-spacing:0"><input id="bulkSkip" type="checkbox" checked style="width:auto"> Omitir los regalos que ya están en la lista</label>
       <button class="primary" id="bulkGo" type="button" disabled>Agregar a la lista</button>
       <p class="err" id="bulkMsg" role="alert"></p>
     </details>
@@ -178,7 +185,7 @@ details.card>summary{cursor:pointer;font-weight:700;color:var(--berry,#a8165f);l
     gifts.forEach(function (g) {
       var c = document.createElement('div'); c.className = 'card gift';
       var main = document.createElement('div'); main.className = 'main';
-      if (g.image) { var th = document.createElement('img'); th.className = 'thumb'; th.alt = ''; th.src = g.image; th.addEventListener('error', function () { th.remove(); }); main.appendChild(th); }
+      if (g.image) { var th = document.createElement('img'); th.className = 'thumb'; th.alt = ''; th.referrerPolicy = 'no-referrer'; th.src = g.image; th.addEventListener('error', function () { th.remove(); }); main.appendChild(th); }
       var info = document.createElement('div'); info.className = 'info';
       var t = document.createElement('div'); t.className = 't'; t.textContent = g.title; info.appendChild(t);
       if (g.note) { var n = document.createElement('div'); n.className = 'n'; n.textContent = g.note; info.appendChild(n); }
@@ -258,16 +265,165 @@ details.card>summary{cursor:pointer;font-weight:700;color:var(--berry,#a8165f);l
 
   // ---- Importar lista ----
   var ICON_NAMES = { heart: 'Pañales', drop: 'Baño', onesie: 'Ropa', bottle: 'Biberones', gift: 'Regalo' };
-  function norm(t) { return t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+  function norm(t) { return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
   function guessIcon(t) {
     var n = norm(t);
     if (/biber|mamader|esteriliz|chupon/.test(n)) return 'bottle';
     if (/panal|pampers|huggies|pannal/.test(n)) return 'heart';
     if (/toallit|jabon|shampoo|bano|banera|tina|crema|colonia|talco|aceite|higien/.test(n)) return 'drop';
-    if (/\bbody|ropa|enterizo|pelele|mameluco|pijama|conjunto|medias|gorro|mitones|babero|zapatit|vestid|camis|polo\b|pantalon/.test(n)) return 'onesie';
+    if (/\bbody|bodies|ropa|enterizo|pelele|mameluco|pijama|conjunto|medias|gorro|mitones|babero|zapatit|vestid|camis|\bpolo|pantalon|saquito|batita|ranita/.test(n)) return 'onesie';
     return 'gift';
   }
+  // Limpia links: quita rastreadores (gclid, utm_...) y acorta si es muy largo
+  var TRACK = /^(utm_|gclid|gad_|gbraid|wbraid|fbclid|msclkid|hsa_|srsltid|gadid|_gl$|mc_)/i;
+  function cleanLink(u) {
+    u = String(u || '').trim();
+    if (!/^https?:\/\//i.test(u)) return '';
+    try {
+      var x = new URL(u);
+      Array.from(x.searchParams.keys()).forEach(function (k) { if (TRACK.test(k)) x.searchParams.delete(k); });
+      u = x.toString();
+      if (u.length > 500) u = x.origin + x.pathname;
+    } catch (e) {}
+    return u.length > 500 ? '' : u;
+  }
+  function cleanTitle(t) {
+    return String(t || '').split(/\r?\n/).filter(function (l) { return l.trim() && !/^saltar al/i.test(l.trim()); }).join(' ').replace(/\s+/g, ' ').trim();
+  }
+
+  // Texto con separadores (CSV / pegado desde Excel) -> filas de celdas
+  function parseDelimited(text, d) {
+    var rows = [], row = [], cur = '', q = false, i = 0, c;
+    text = text.replace(/^\uFEFF/, '');
+    for (; i < text.length; i++) {
+      c = text[i];
+      if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+      else if (c === '"' && cur === '') q = true;
+      else if (c === d) { row.push(cur); cur = ''; }
+      else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+      else if (c !== '\r') cur += c;
+    }
+    row.push(cur); rows.push(row);
+    return rows;
+  }
+
+  // Lector de .xlsx sin librerías (un .xlsx es un zip de archivos XML)
+  var NS_R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+  function u16(b, o) { return b[o] | (b[o + 1] << 8); }
+  function u32(b, o) { return (b[o] | (b[o + 1] << 8) | (b[o + 2] << 16) | (b[o + 3] << 24)) >>> 0; }
+  function inflateRaw(data) {
+    var ds = new DecompressionStream('deflate-raw'), w = ds.writable.getWriter();
+    w.write(data); w.close();
+    return new Response(ds.readable).arrayBuffer().then(function (x) { return new Uint8Array(x); });
+  }
+  function unzip(buf) {
+    var b = new Uint8Array(buf), i = b.length - 22, files = {}, k, off, n;
+    while (i >= 0 && u32(b, i) !== 0x06054b50) i--;
+    if (i < 0) throw new Error('Ese archivo no es un Excel (.xlsx) válido');
+    n = u16(b, i + 10); off = u32(b, i + 16);
+    for (k = 0; k < n; k++) {
+      if (u32(b, off) !== 0x02014b50) break;
+      var nl = u16(b, off + 28), el = u16(b, off + 30), cl = u16(b, off + 32);
+      files[new TextDecoder().decode(b.subarray(off + 46, off + 46 + nl))] = { method: u16(b, off + 10), csize: u32(b, off + 20), lh: u32(b, off + 42) };
+      off += 46 + nl + el + cl;
+    }
+    return { read: function (name) {
+      var f = files[name]; if (!f) return Promise.resolve(null);
+      var s = f.lh + 30 + u16(b, f.lh + 26) + u16(b, f.lh + 28), data = b.subarray(s, s + f.csize);
+      return f.method === 0 ? Promise.resolve(data) : inflateRaw(data);
+    } };
+  }
+  function xmlDoc(u8) { return new DOMParser().parseFromString(new TextDecoder().decode(u8), 'application/xml'); }
+  function colIdx(letters) { var n = 0; for (var i = 0; i < letters.length; i++) n = n * 26 + letters.charCodeAt(i) - 64; return n - 1; }
+  function relTarget(doc, id) {
+    var rs = doc.getElementsByTagName('Relationship');
+    for (var i = 0; i < rs.length; i++) if (rs[i].getAttribute('Id') === id) return rs[i].getAttribute('Target');
+    return null;
+  }
+  function parseXlsx(buf) {
+    if (typeof DecompressionStream === 'undefined') return Promise.reject(new Error('Tu navegador no puede leer Excel. Copia las filas desde Excel y pégalas en la caja de texto.'));
+    var z = unzip(buf);
+    return Promise.all([z.read('xl/workbook.xml'), z.read('xl/_rels/workbook.xml.rels'), z.read('xl/sharedStrings.xml')]).then(function (r) {
+      if (!r[0] || !r[1]) throw new Error('No se pudo leer el Excel');
+      var sh = xmlDoc(r[0]).getElementsByTagName('sheet')[0], rid = sh && (sh.getAttribute('r:id') || sh.getAttributeNS(NS_R, 'id'));
+      var target = rid && relTarget(xmlDoc(r[1]), rid);
+      if (!target) throw new Error('El Excel no tiene hojas');
+      var path = target.charAt(0) === '/' ? target.slice(1) : 'xl/' + target, base = path.split('/').pop();
+      var strings = [];
+      if (r[2]) {
+        var sis = xmlDoc(r[2]).getElementsByTagName('si');
+        for (var i = 0; i < sis.length; i++) {
+          var ts = sis[i].getElementsByTagName('t'), txt = '';
+          for (var j = 0; j < ts.length; j++) if (ts[j].parentNode.nodeName !== 'rPh') txt += ts[j].textContent;
+          strings.push(txt);
+        }
+      }
+      return Promise.all([z.read(path), z.read('xl/worksheets/_rels/' + base + '.rels')]).then(function (w) {
+        if (!w[0]) throw new Error('No se pudo leer la hoja del Excel');
+        var sheet = xmlDoc(w[0]), rels = w[1] ? xmlDoc(w[1]) : null, links = {};
+        var hl = sheet.getElementsByTagName('hyperlink');
+        for (var h = 0; h < hl.length; h++) {
+          var hid = hl[h].getAttribute('r:id') || hl[h].getAttributeNS(NS_R, 'id'), t = hid && rels ? relTarget(rels, hid) : null;
+          if (t) links[hl[h].getAttribute('ref').split(':')[0]] = t;
+        }
+        var rows = [], cs = sheet.getElementsByTagName('c');
+        for (var k = 0; k < cs.length; k++) {
+          var c = cs[k], ref = c.getAttribute('r'), m = /^([A-Z]+)(\d+)$/.exec(ref); if (!m) continue;
+          var ty = c.getAttribute('t'), ve = c.getElementsByTagName('v')[0], fe = c.getElementsByTagName('f')[0], val = '';
+          if (ty === 'inlineStr') { var it = c.getElementsByTagName('t'); for (var q = 0; q < it.length; q++) val += it[q].textContent; }
+          else if (ve) val = ty === 's' ? (strings[+ve.textContent] || '') : ve.textContent;
+          var link = links[ref] || null;
+          if (!link && fe) { var hm = /HYPERLINK\(\s*"([^"]+)"/i.exec(fe.textContent); if (hm) link = hm[1]; }
+          var ri = +m[2] - 1, ci = colIdx(m[1]);
+          (rows[ri] = rows[ri] || [])[ci] = { v: val, l: link };
+        }
+        return rows;
+      });
+    });
+  }
+
+  // Tabla (filas de celdas {v,l}) -> regalos. Detecta las columnas por el encabezado.
+  function mapHeader(txt) {
+    var h = norm(txt).replace(/[^a-z]/g, '');
+    if (!h) return null;
+    if (/^(regalo|regalos|nombre|producto|articulo|item|titulo)$/.test(h)) return 'title';
+    if (/^(cantidad|cant|unidades|qty)$/.test(h)) return 'qty';
+    if (/(imagen|foto|image|img)/.test(h)) return 'image';
+    if (/(dondecomprar|comprar|link|enlace|url|tienda|referencia|web)/.test(h)) return 'url';
+    if (/(descripcion|detalle|nota|observ|comentario)/.test(h)) return 'note';
+    return null;
+  }
+  function fromTable(rows) {
+    var map = null, start = 0, r, c;
+    for (r = 0; r < Math.min(rows.length, 30); r++) {
+      var m = {}, cnt = 0;
+      (rows[r] || []).forEach(function (cell, ci) { var f = cell && mapHeader(cell.v); if (f && !(f in m)) { m[f] = ci; cnt++; } });
+      if (cnt >= 2 && 'title' in m) { map = m; start = r + 1; break; }
+    }
+    if (!map) { // sin encabezado: Regalo, Imagen, Dónde comprarlo, Descripción
+      var first = 0; for (r = 0; r < rows.length; r++) if (rows[r] && rows[r].some(function (x) { return x && x.v; })) { first = r; break; }
+      var lead = 0; (rows[first] || []).some(function (x, i) { if (x && x.v) { lead = i; return true; } return false; });
+      map = { title: lead, image: lead + 1, url: lead + 2, note: lead + 3 }; start = first;
+    }
+    var out = [];
+    for (r = start; r < rows.length; r++) {
+      var row = rows[r] || [], g = function (f) { return f in map ? (row[map[f]] || { v: '', l: null }) : { v: '', l: null }; };
+      var title = cleanTitle(g('title').v); if (!title) continue;
+      var img = g('image'), url = g('url'), noteCell = g('note');
+      var image = cleanLink(img.l || img.v), link = cleanLink(url.l || url.v);
+      var note = cleanTitle(noteCell.v);
+      if (!note && !link && url.v && !/^https?:\/\//i.test(url.v)) note = cleanTitle(url.v); // texto en vez de link
+      var qty = Math.max(1, Math.min(parseInt(g('qty').v, 10) || 1, 20));
+      for (var i = 0; i < qty; i++) out.push({ title: title.slice(0, 100), note: note.slice(0, 200), url: link, image: image, icon: guessIcon(title) });
+    }
+    return out.slice(0, 300);
+  }
+
+  // Texto pegado: filas de Excel (con tabuladores) o una línea por regalo
   function parseBulk(text) {
+    if (/\t/.test(text)) {
+      return fromTable(parseDelimited(text, '\t').map(function (r) { return r.map(function (v) { return { v: v, l: null }; }); }));
+    }
     var out = [];
     text.split(/\r?\n/).forEach(function (raw) {
       var line = raw.replace(/[\u200e\u200f]/g, '').trim();
@@ -275,7 +431,7 @@ details.card>summary{cursor:pointer;font-weight:700;color:var(--berry,#a8165f);l
       line = line.replace(/^(?:[-*•·▪►»>✔✅☑✓]|\d{1,3}\s*[.)\-:])\s*/u, '').replace(/^[\u{1F300}-\u{1FAFF}\u2600-\u27BF\uFE0F\s]+/u, '').trim();
       if (!line || /:\s*$/.test(line)) return; // encabezados como "Lista de regalos:"
       var title = line, note = '';
-      var m = /^(.+?)(?:\t+|\s+[-–—]\s+|\s*\|\s*|:\s+)(.+)$/.exec(line);
+      var m = /^(.+?)(?:\s+[-–—]\s+|\s*\|\s*|:\s+)(.+)$/.exec(line);
       if (m) { title = m[1].trim(); note = m[2].trim(); }
       var qty = 1, q;
       if ((q = /^(\d{1,2})\s*[xX×]\s+(.+)$/.exec(title))) { qty = +q[1]; title = q[2].trim(); }
@@ -283,36 +439,64 @@ details.card>summary{cursor:pointer;font-weight:700;color:var(--berry,#a8165f);l
       else if (note && (q = /^[xX×]\s*(\d{1,2})$/.exec(note))) { qty = +q[1]; note = ''; }
       if (!title) return;
       qty = Math.max(1, Math.min(qty, 20));
-      for (var i = 0; i < qty; i++) out.push({ title: title.slice(0, 100), note: note.slice(0, 200), icon: guessIcon(title) });
+      for (var i = 0; i < qty; i++) out.push({ title: title.slice(0, 100), note: note.slice(0, 200), url: '', image: '', icon: guessIcon(title) });
     });
     return out.slice(0, 300);
   }
-  var bulkItems = [];
-  function bulkPreview() {
-    bulkItems = parseBulk($('bulkText').value);
-    var box = $('bulkPrev'); box.textContent = ''; $('bulkMsg').textContent = '';
-    $('bulkGo').disabled = !bulkItems.length;
-    $('bulkGo').textContent = bulkItems.length ? 'Agregar ' + bulkItems.length + (bulkItems.length === 1 ? ' regalo' : ' regalos') + ' a la lista' : 'Agregar a la lista';
-    if (!bulkItems.length) return;
-    var p = document.createElement('p'); p.className = 'hint'; p.textContent = 'Vista previa (' + bulkItems.length + '):'; box.appendChild(p);
+
+  var bulkItems = [], bulkToSend = [];
+  function showBulk(items) {
+    bulkItems = items; $('bulkMsg').textContent = ''; $('bulkMsg').style.color = '';
+    var have = {}; gifts.forEach(function (g) { have[norm(g.title).replace(/\s+/g, ' ')] = 1; });
+    var skip = $('bulkSkip').checked, dupN = 0;
+    bulkToSend = [];
+    var box = $('bulkPrev'); box.textContent = '';
     var ul = document.createElement('ul');
-    bulkItems.forEach(function (g) {
-      var li = document.createElement('li'), l = document.createElement('span'), t = document.createElement('b');
-      t.textContent = g.title; l.appendChild(t);
-      if (g.note) { var sm = document.createElement('small'); sm.textContent = ' — ' + g.note; l.appendChild(sm); }
-      var em = document.createElement('em'); em.textContent = ICON_NAMES[g.icon] || 'Regalo';
-      li.appendChild(l); li.appendChild(em); ul.appendChild(li);
+    items.forEach(function (g) {
+      var dup = !!have[norm(g.title).replace(/\s+/g, ' ')]; if (dup && skip) dupN++; else bulkToSend.push(g);
+      var li = document.createElement('li'); if (dup && skip) li.className = 'dup';
+      var t = document.createElement('div'); t.className = 't';
+      if (g.image) { var im = document.createElement('img'); im.alt = ''; im.referrerPolicy = 'no-referrer'; im.loading = 'lazy'; im.addEventListener('error', function () { im.style.visibility = 'hidden'; }); im.src = g.image; t.appendChild(im); }
+      var sp = document.createElement('span'), b = document.createElement('b'); b.textContent = g.title; sp.appendChild(b);
+      if (g.note) { var sm = document.createElement('small'); sm.textContent = ' — ' + g.note; sp.appendChild(sm); }
+      t.appendChild(sp);
+      var em = document.createElement('em'); em.textContent = (dup && skip ? 'Ya existe · ' : '') + (g.url ? 'con link · ' : '') + (ICON_NAMES[g.icon] || 'Regalo');
+      li.appendChild(t); li.appendChild(em); ul.appendChild(li);
     });
-    box.appendChild(ul);
+    if (items.length) {
+      var p = document.createElement('p'); p.className = 'hint';
+      var withImg = items.filter(function (g) { return g.image; }).length, withUrl = items.filter(function (g) { return g.url; }).length;
+      p.textContent = 'Vista previa: ' + items.length + ' regalos · ' + withImg + ' con foto · ' + withUrl + ' con link de compra' + (dupN ? ' · ' + dupN + ' ya están en la lista y se omiten' : '') + '.';
+      box.appendChild(p); box.appendChild(ul);
+    }
+    var n = bulkToSend.length;
+    $('bulkGo').disabled = !n;
+    $('bulkGo').textContent = n ? 'Agregar ' + n + (n === 1 ? ' regalo' : ' regalos') + ' a la lista' : 'Agregar a la lista';
   }
-  $('bulkText').addEventListener('input', bulkPreview);
+  $('bulkText').addEventListener('input', function () { $('bulkFile').value = ''; showBulk(parseBulk(this.value)); });
+  $('bulkSkip').addEventListener('change', function () { showBulk(bulkItems); });
+  $('bulkFile').addEventListener('change', function () {
+    var f = this.files && this.files[0]; if (!f) return;
+    $('bulkMsg').textContent = ''; $('bulkMsg').style.color = '';
+    var ext = (f.name.split('.').pop() || '').toLowerCase();
+    var done = function (items) { $('bulkText').value = ''; showBulk(items); if (!items.length) $('bulkMsg').textContent = 'No encontré regalos en ese archivo. Revisa que tenga una columna "Regalo".'; };
+    var fail = function (e) { $('bulkFile').value = ''; showBulk([]); $('bulkMsg').textContent = e.message || 'No se pudo leer el archivo'; };
+    if (ext === 'xlsx') {
+      f.arrayBuffer().then(parseXlsx).then(function (rows) { done(fromTable(rows)); }).catch(fail);
+    } else {
+      f.text().then(function (txt) {
+        var first = txt.split(/\r?\n/)[0] || '', d = ['\t', ';', ','].sort(function (a, b) { return first.split(b).length - first.split(a).length; })[0];
+        done(fromTable(parseDelimited(txt, d).map(function (r) { return r.map(function (v) { return { v: v, l: null }; }); })));
+      }).catch(fail);
+    }
+  });
   $('bulkGo').addEventListener('click', function () {
-    if (!bulkItems.length) return;
+    if (!bulkToSend.length) return;
     var btn = this; btn.disabled = true; btn.textContent = 'Agregando…'; $('bulkMsg').textContent = '';
-    api('POST', '/api/admin/gifts', { bulk: bulkItems }).then(function (d) {
-      $('bulkText').value = ''; bulkPreview(); $('bulkMsg').style.color = '#1b7f4c'; $('bulkMsg').textContent = '¡Listo! Se agregaron ' + d.added + ' regalos.';
-      return load();
-    }).catch(function (e) { $('bulkMsg').style.color = ''; $('bulkMsg').textContent = e.message; btn.disabled = false; bulkPreview(); });
+    api('POST', '/api/admin/gifts', { bulk: bulkToSend }).then(function (d) {
+      $('bulkText').value = ''; $('bulkFile').value = '';
+      return load().then(function () { showBulk([]); $('bulkMsg').style.color = '#1b7f4c'; $('bulkMsg').textContent = '¡Listo! Se agregaron ' + d.added + ' regalos.'; });
+    }).catch(function (e) { $('bulkMsg').style.color = ''; $('bulkMsg').textContent = e.message; showBulk(bulkItems); });
   });
   $('delAll').addEventListener('click', function () {
     if (!gifts.length) return;
