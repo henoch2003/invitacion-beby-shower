@@ -27,7 +27,7 @@
 <title>Baby Shower Aysel Alessia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Jost:wght@400;500&family=Marcellus&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Jost:wght@400;500&family=Marcellus&display=swap" rel="stylesheet">
 <style>
 /* Concepto: tarjeta vertical de papel blanco con acuarela rosada, rosas y destellos dorados; portada con video de sobre y conejita. Una sola vista a la vez dentro de la tarjeta. */
 :root {
@@ -108,13 +108,34 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .date .mid { padding-inline: 4cqw; border-inline: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: clamp(3.4rem, 15cqw, 4.5rem); line-height: 1.05; color: var(--berry); font-variant-numeric: lining-nums; }
 
 /* ---------- Íconos de acción ---------- */
-.actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1cqw; width: calc(100% + 8cqw); margin-top: 6cqw; }
-.act { display: flex; flex-direction: column; align-items: center; gap: 2cqw; text-decoration: none; color: var(--berry); background: none; border: 0; padding: 0; cursor: pointer; font-family: var(--f-serif); font-weight: 600; font-size: clamp(.64rem, 3cqw, .86rem); letter-spacing: .01em; text-transform: uppercase; line-height: 1.2; }
-.act .dot, .big-dot { display: grid; place-items: center; border-radius: 50%; color: #fff; background: radial-gradient(circle at 35% 28%, #e5659a, #c23a79 58%, #a02a62); box-shadow: inset 0 0 0 2.5px #dcb982, inset 0 0 0 4px rgba(255, 255, 255, .35), 0 6px 10px rgba(120, 30, 70, .28); transition: transform .2s ease; }
-.act .dot { width: clamp(50px, 15.5cqw, 72px); height: clamp(50px, 15.5cqw, 72px); }
+.actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2.6cqw; width: calc(100% + 10cqw); margin-top: 5cqw; align-items: start; }
+.act { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: var(--berry); background: none; border: 0; padding: 0; cursor: pointer; font-family: var(--f-serif); -webkit-tap-highlight-color: transparent; }
+.act .dot, .big-dot { display: grid; place-items: center; border-radius: 50%; color: #fff; border: 3px solid transparent;
+  background: radial-gradient(circle at 35% 28%, #e8348a, #c4135f 55%, #9b0d48) padding-box, linear-gradient(135deg, #fbe39a, #d5a13c 48%, #f6d27c) border-box;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .28), 0 7px 12px rgba(120, 20, 70, .32); transition: transform .2s ease; }
+.act .dot { position: relative; width: clamp(56px, 20.5cqw, 84px); height: clamp(56px, 20.5cqw, 84px); }
 .act:hover .dot { transform: translateY(-2px); }
-.act svg { width: 44%; height: 44%; }
-.hint { margin: 4cqw 0 0; font-weight: 600; font-size: clamp(.7rem, 3cqw, .85rem); letter-spacing: .2em; line-height: 1.5; text-transform: uppercase; color: var(--berry); }
+.act:active .dot { transform: scale(.94); }
+.act .ico { width: 46%; height: 46%; }
+/* Manita que indica "toca aquí" */
+.act .hand { position: absolute; right: -11%; bottom: -9%; width: 46%; height: 46%; filter: drop-shadow(0 2px 3px rgba(90, 10, 50, .45)); animation: tap 1.5s ease-in-out infinite; pointer-events: none; }
+.act:nth-child(2) .hand { animation-delay: .2s; } .act:nth-child(3) .hand { animation-delay: .4s; } .act:nth-child(4) .hand { animation-delay: .6s; }
+/* Anillo que late alrededor del botón */
+.act .dot::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid rgba(217, 66, 138, .6); pointer-events: none; animation: ring 2.2s ease-out infinite; }
+.act:nth-child(2) .dot::after { animation-delay: .3s; } .act:nth-child(3) .dot::after { animation-delay: .6s; } .act:nth-child(4) .dot::after { animation-delay: .9s; }
+.actions.touched .dot::after { display: none; }
+/* Etiqueta: píldora "CLIC AQUÍ" + caja con el nombre */
+.act .clic { position: relative; z-index: 1; margin-top: 2.4cqw; padding: .38em .95em; border-radius: 999px; border: 1px solid #e8b95a; background: linear-gradient(#e8348a, #b50f57); color: #fff; font-weight: 700; font-size: clamp(.5rem, 2.5cqw, .68rem); letter-spacing: .07em; text-transform: uppercase; line-height: 1.1; white-space: nowrap; box-shadow: 0 2px 4px rgba(120, 20, 70, .25); }
+.act .lbl { width: 100%; margin-top: -.75em; padding: 1.25em .3em .6em; text-align: center; background: rgba(255, 250, 250, .92); border: 1.5px solid var(--gold-l); border-radius: 12px; box-shadow: 0 2px 6px rgba(150, 30, 80, .12); font-weight: 700; font-size: clamp(.58rem, 2.75cqw, .78rem); letter-spacing: .01em; text-transform: uppercase; line-height: 1.2; color: var(--berry); }
+.act:hover .lbl { background: #fff; }
+@keyframes ring { 0% { transform: scale(1); opacity: .9; } 70%, 100% { transform: scale(1.55); opacity: 0; } }
+@keyframes tap { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-3px, -4px); } }
+@media (prefers-reduced-motion: reduce) { .act .dot::after, .act .hand { animation: none !important; } }
+/* Cápsula "TOCA LOS BOTONES PARA INTERACTUAR" */
+.hint { margin: 5cqw 0 0; display: flex; align-items: center; justify-content: center; gap: 2cqw; }
+.hint span { padding: 2.4cqw 5.5cqw; border-radius: 999px; background: linear-gradient(#fcdae5, #f8c2d5); border: 1.5px solid #e58fb0; box-shadow: 0 2px 6px rgba(150, 30, 80, .14); font-weight: 700; font-size: clamp(.7rem, 3.3cqw, .9rem); letter-spacing: .16em; line-height: 1.5; text-transform: uppercase; color: var(--berry); }
+.hint .spk { width: 7cqw; height: 7cqw; flex: none; color: #d9548a; }
+.hint .spk.r { transform: scaleX(-1); }
 
 /* ---------- Cuenta regresiva ---------- */
 .count { display: flex; flex-direction: column; align-items: center; width: min(88cqw, 380px); margin: 5cqw auto 0; padding: 3cqw 5cqw; border-radius: 4cqw; background: rgba(249, 215, 224, .6); font-weight: 600; text-transform: uppercase; }
@@ -131,7 +152,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .orn b { flex: none; width: 8px; height: 8px; background: var(--rose); transform: rotate(45deg); }
 .group { width: 100%; margin-top: 5cqw; display: flex; flex-direction: column; align-items: center; }
 .label { margin: 0; padding-left: .24em; font-weight: 600; font-size: clamp(.8rem, 3.4cqw, .98rem); letter-spacing: .24em; text-transform: uppercase; color: var(--berry); }
-.people { margin: 1.5cqw 0 0; max-width: 78cqw; font-weight: 500; font-size: clamp(1rem, 4.3cqw, 1.25rem); line-height: 1.35; color: var(--ink); text-wrap: balance; }
+.people { margin: 1.5cqw 0 0; max-width: 78cqw; font-weight: 600; font-size: clamp(1rem, 4.3cqw, 1.25rem); line-height: 1.35; color: var(--ink); text-wrap: balance; }
 .people strong { display: block; font-size: clamp(1.45rem, 6.6cqw, 1.9rem); letter-spacing: .08em; font-weight: 600; color: var(--berry); line-height: 1.15; }
 .people svg { width: 1.05em; height: 1.05em; vertical-align: -.15em; margin-right: .3em; color: var(--rose); }
 .ref { margin: 2cqw 0 0; max-width: 72cqw; font-style: italic; font-weight: 500; font-size: clamp(.92rem, 4cqw, 1.1rem); line-height: 1.35; color: var(--ink); text-wrap: balance; }
@@ -141,7 +162,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .title { margin: 0; padding-block: .08em; font-family: var(--f-script); font-weight: 400; font-size: clamp(2.6rem, 12.5cqw, 3.5rem); line-height: 1.1; text-wrap: balance; background: linear-gradient(100deg, #8f2552, #cc4a85 50%, #8a2150); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: var(--berry); }
 .big-dot { width: 17cqw; height: 17cqw; min-width: 62px; min-height: 62px; margin-top: 6cqw; }
 .big-dot svg { width: 46%; height: 46%; }
-.dress { margin: 5cqw 0 0; font-weight: 600; font-size: clamp(1.3rem, 6cqw, 1.7rem); letter-spacing: .1em; text-transform: uppercase; color: var(--berry); }
+.dress { margin: 6cqw 0 0; font-weight: 700; font-size: clamp(1.45rem, 7cqw, 2.05rem); letter-spacing: .06em; white-space: nowrap; text-transform: uppercase; color: #7e1a4b; text-shadow: 0 1px 0 #fff, 0 2px 8px rgba(255, 255, 255, .9); }
+#dress .dress-sub { margin-top: 4cqw; max-width: 80cqw; font-weight: 700; font-size: clamp(1.2rem, 5.4cqw, 1.5rem); color: #46182f; text-shadow: 0 1px 0 rgba(255, 255, 255, .9); }
+#dressT { -webkit-text-stroke: 1.3px #9a2560; filter: drop-shadow(0 1px 1px rgba(255, 255, 255, .9)); }
+#dress .big-dot { width: 21cqw; height: 21cqw; }
 .dress-sub { margin: 3cqw 0 0; max-width: 70cqw; font-weight: 600; font-size: clamp(1rem, 4.4cqw, 1.2rem); line-height: 1.4; color: var(--ink); text-wrap: balance; }
 #giftBox { width: 100%; display: flex; flex-direction: column; align-items: center; }
 .gift-list { list-style: none; margin: 7cqw auto 0; padding: 0; width: max-content; max-width: 100%; display: grid; gap: 4cqw; text-align: left; }
@@ -255,23 +279,27 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 
       <div class="actions">
         <a class="act" href="https://maps.app.goo.gl/z9nUjfJBvaiEoQYy5?g_st=aw" target="_blank" rel="noopener">
-          <span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.2-6-10a6 6 0 1 1 12 0c0 4.8-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg></span>
-          Ver<br>ubicación
+          <span class="dot"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.2-6-10a6 6 0 1 1 12 0c0 4.8-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg><svg class="hand" viewBox="0 0 30 30" aria-hidden="true"><g stroke="#ff8fb8" stroke-width="1.7" stroke-linecap="round" fill="none"><path d="M3.5 9.5l3 1.6M7 4.5l1.6 2.8M12.5 2.5v3"/></g><g transform="translate(6 6) scale(.95)" fill="#fff" stroke="#9b0d48" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 14a8 8 0 0 1-8 8"/><path d="M18 11v-1a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1"/><path d="M10 9.5V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v10"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></g></svg></span>
+          <span class="clic">Clic aquí</span>
+          <span class="lbl">Ver<br>ubicación</span>
         </a>
         <button class="act" type="button" data-go="rsvp">
-          <span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4M9 15l2 2 4-4"/></svg></span>
-          Confirmar<br>asistencia
+          <span class="dot"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4M9 15l2 2 4-4"/></svg><svg class="hand" viewBox="0 0 30 30" aria-hidden="true"><g stroke="#ff8fb8" stroke-width="1.7" stroke-linecap="round" fill="none"><path d="M3.5 9.5l3 1.6M7 4.5l1.6 2.8M12.5 2.5v3"/></g><g transform="translate(6 6) scale(.95)" fill="#fff" stroke="#9b0d48" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 14a8 8 0 0 1-8 8"/><path d="M18 11v-1a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1"/><path d="M10 9.5V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v10"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></g></svg></span>
+          <span class="clic">Clic aquí</span>
+          <span class="lbl">Confirmar<br>asistencia</span>
         </button>
         <button class="act" type="button" data-go="gifts">
-          <span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="9" width="17" height="11" rx="1.5"/><path d="M3 9h18M12 9v11M12 9c-1.6-4-5.5-4-5.5-1.6C6.5 9 9 9 12 9zm0 0c1.6-4 5.5-4 5.5-1.6C17.5 9 15 9 12 9z"/></svg></span>
-          Lista de<br>regalos
+          <span class="dot"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="9" width="17" height="11" rx="1.5"/><path d="M3 9h18M12 9v11M12 9c-1.6-4-5.5-4-5.5-1.6C6.5 9 9 9 12 9zm0 0c1.6-4 5.5-4 5.5-1.6C17.5 9 15 9 12 9z"/></svg><svg class="hand" viewBox="0 0 30 30" aria-hidden="true"><g stroke="#ff8fb8" stroke-width="1.7" stroke-linecap="round" fill="none"><path d="M3.5 9.5l3 1.6M7 4.5l1.6 2.8M12.5 2.5v3"/></g><g transform="translate(6 6) scale(.95)" fill="#fff" stroke="#9b0d48" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 14a8 8 0 0 1-8 8"/><path d="M18 11v-1a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1"/><path d="M10 9.5V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v10"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></g></svg></span>
+          <span class="clic">Clic aquí</span>
+          <span class="lbl">Lista de<br>regalos</span>
         </button>
         <button class="act" type="button" data-go="dress">
-          <span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4L3 7l2 4 3-1v10h8V10l3 1 2-4-5-3c-.6 1.3-1.8 2-4 2S8.6 5.3 8 4z"/></svg></span>
-          Código de<br>vestimenta
+          <span class="dot"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4L3 7l2 4 3-1v10h8V10l3 1 2-4-5-3c-.6 1.3-1.8 2-4 2S8.6 5.3 8 4z"/></svg><svg class="hand" viewBox="0 0 30 30" aria-hidden="true"><g stroke="#ff8fb8" stroke-width="1.7" stroke-linecap="round" fill="none"><path d="M3.5 9.5l3 1.6M7 4.5l1.6 2.8M12.5 2.5v3"/></g><g transform="translate(6 6) scale(.95)" fill="#fff" stroke="#9b0d48" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 14a8 8 0 0 1-8 8"/><path d="M18 11v-1a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1"/><path d="M10 9.5V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v10"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></g></svg></span>
+          <span class="clic">Clic aquí</span>
+          <span class="lbl">Código de<br>vestimenta</span>
         </button>
       </div>
-      <p class="hint">Toca los íconos<br>para interactuar</p>
+      <p class="hint"><svg class="spk" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M24 8L11 4M26 15H8M24 22L11 26"/></svg><span>Toca los botones<br>para interactuar</span><svg class="spk r" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M24 8L11 4M26 15H8M24 22L11 26"/></svg></p>
       <p class="count" id="count" role="timer" aria-live="off"></p>
 
       <div class="orn" aria-hidden="true"><i></i><b></b><i></i></div>
@@ -364,7 +392,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
     var h = document.querySelector('#' + id + ' [tabindex="-1"]');
     if (h) setTimeout(function () { h.focus({ preventScroll: true }); }, 0);
   }
-  document.querySelectorAll('[data-go]').forEach(function (b) { b.addEventListener('click', function () { show(b.getAttribute('data-go')); }); });
+  document.querySelectorAll('[data-go]').forEach(function (b) { b.addEventListener('click', function () { var ac = document.querySelector('.actions'); if (ac) ac.classList.add('touched'); show(b.getAttribute('data-go')); }); });
 
   /* ---------- Regalos (mesa conectada a la base de datos) ---------- */
   var box = document.getElementById('giftBox');
