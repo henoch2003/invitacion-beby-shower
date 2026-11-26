@@ -107,9 +107,13 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 /* ---------- Fecha ---------- */
 .date { width: 100%; margin-top: 5cqw; display: flex; flex-direction: column; align-items: center; }
 .date .month, .date .year { font-weight: 600; letter-spacing: .14em; font-size: clamp(1.1rem, 5cqw, 1.45rem); color: var(--berry); text-transform: uppercase; }
-.date .row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: stretch; width: 100%; max-width: 88cqw; margin-top: 1cqw; }
+.date .row { display: grid; grid-template-columns: minmax(0, .85fr) auto minmax(0, 1.15fr); align-items: stretch; width: 100%; max-width: 94cqw; margin-top: 1cqw; }
 .date .side { display: flex; align-items: center; justify-content: center; margin-block: 3.2cqw; border-block: 1px solid var(--line); font-weight: 700; font-size: clamp(1.05rem, 4.9cqw, 1.45rem); letter-spacing: .04em; line-height: 1.25; text-align: center; color: var(--berry); }
 .date .mid { padding-inline: 4cqw; border-inline: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: clamp(3.4rem, 15cqw, 4.5rem); line-height: 1.05; color: var(--berry); font-variant-numeric: lining-nums; }
+
+.date .side.time { flex-direction: column; gap: .1em; white-space: nowrap; }
+.date .side.time small { font-size: clamp(.95rem, 4.4cqw, 1.3rem); font-weight: 700; letter-spacing: .1em; }
+.date .side.time b { font-size: clamp(1.45rem, 7cqw, 2.1rem); font-weight: 700; letter-spacing: .02em; line-height: 1.1; color: var(--berry); }
 
 /* ---------- Íconos de acción ---------- */
 .actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2.6cqw; width: calc(100% + 10cqw); margin-top: 5cqw; align-items: start; }
@@ -204,7 +208,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .intro { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fbe6ec; transition: opacity .8s ease, visibility .8s; }
 .intro.gone { opacity: 0; visibility: hidden; }
 .vwrap { position: relative; width: 100%; height: 100%; background: #fbe6ec; }
-.vwrap video { width: 100%; height: 100%; object-fit: cover; object-position: 90% 50%; display: block; }
+.vwrap video { width: 100%; height: 100%; object-fit: contain; object-position: center; display: block; }
 @media (min-width: 520px) {
   .intro { background: linear-gradient(180deg, #f6cbd8, #eeb4c6); }
   .vwrap { width: auto; height: min(100svh - 36px, 780px); aspect-ratio: 720 / 1210; border-radius: 6px; overflow: hidden; box-shadow: 0 18px 50px rgba(150, 30, 80, .28), 0 2px 6px rgba(150, 30, 80, .18); }
@@ -277,7 +281,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 
       <div class="date" aria-label="Sábado 12 de diciembre de 2026, 6:00 p. m.">
         <span class="month">Diciembre</span>
-        <div class="row"><div class="side">SÁBADO</div><div class="mid">12</div><div class="side">A LAS<br>6:00 P.M.</div></div>
+        <div class="row"><div class="side">SÁBADO</div><div class="mid">12</div><div class="side time"><small>A LAS</small><b>6:00 P.M.</b></div></div>
         <span class="year">2026</span>
       </div>
 
