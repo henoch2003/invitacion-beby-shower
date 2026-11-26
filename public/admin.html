@@ -49,7 +49,10 @@ button:disabled{opacity:.6;cursor:wait}
 .imgbox .prev img{width:84px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
 .hint{font-size:.8rem;color:#7a5a6b;margin:6px 0 0}
 input[type=file]{padding:8px;background:#fff}
-textarea{resize:vertical;min-height:140px;line-height:1.4}
+.filerow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.filerow input[type=file]{flex:1 1 200px;min-width:0}
+a.dl{display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border:1px solid var(--berry,#a8165f);border-radius:8px;color:var(--berry,#a8165f);background:#fff;font-weight:600;font-size:.9rem;text-decoration:none;white-space:nowrap}
+a.dl:hover{background:#fdf0f6}
 details.card>summary{cursor:pointer;font-weight:700;color:var(--berry,#a8165f);list-style:revert}
 #bulkPrev{margin:10px 0}
 #bulkPrev ul{margin:6px 0 0;padding:0;list-style:none;max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:8px;background:#fff}
@@ -93,11 +96,11 @@ details.card>summary{cursor:pointer;font-weight:700;color:var(--berry,#a8165f);l
 
     <details class="card" id="bulkBox" style="margin-bottom:14px">
       <summary>Importar varios regalos de una vez</summary>
-      <p class="hint"><b>Opción 1 · Subir tu Excel</b> (.xlsx) o CSV con las columnas <b>Regalo</b>, <b>Imagen</b> (link de la foto), <b>Dónde comprarlo</b> (link de la tienda) y <b>Descripción</b> (opcional). También puedes agregar una columna <b>Cantidad</b>.</p>
-      <div class="field"><input id="bulkFile" type="file" accept=".xlsx,.csv,.tsv,.txt"></div>
-      <p class="hint" style="text-align:center;margin:10px 0">— o —</p>
-      <p class="hint"><b>Opción 2 · Pegar la lista</b>, un regalo por línea. Si copias las filas desde Excel, se toman las mismas columnas. Detalle: <i>Biberón - 250 ml</i>. Varios iguales: <i>Pañales x3</i>.</p>
-      <div class="field"><textarea id="bulkText" rows="6" placeholder="Pañales talla RN x3&#10;Toallitas húmedas - marca Huggies&#10;Biberón anticólicos"></textarea></div>
+      <p class="hint">Descarga la plantilla, llénala con <b>un regalo por fila</b> (Regalo, Imagen, Dónde comprarlo y Descripción) y súbela aquí.</p>
+      <div class="filerow">
+        <input id="bulkFile" type="file" accept=".xlsx,.csv">
+        <a class="dl" href="/plantilla-regalos.xlsx" download="plantilla-regalos.xlsx"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg>Descargar plantilla</a>
+      </div>
       <div id="bulkPrev"></div>
       <label style="display:flex;gap:8px;align-items:center;font-size:.88rem;margin:8px 0;text-transform:none;letter-spacing:0"><input id="bulkSkip" type="checkbox" checked style="width:auto"> Omitir los regalos que ya están en la lista</label>
       <button class="primary" id="bulkGo" type="button" disabled>Agregar a la lista</button>
@@ -408,7 +411,7 @@ details.card>summary{cursor:pointer;font-weight:700;color:var(--berry,#a8165f);l
     var out = [];
     for (r = start; r < rows.length; r++) {
       var row = rows[r] || [], g = function (f) { return f in map ? (row[map[f]] || { v: '', l: null }) : { v: '', l: null }; };
-      var title = cleanTitle(g('title').v); if (!title) continue;
+      var title = cleanTitle(g('title').v); if (!title || /^ejemplo\b/i.test(title)) continue; // la fila de ejemplo de la plantilla no se importa
       var img = g('image'), url = g('url'), noteCell = g('note');
       var image = cleanLink(img.l || img.v), link = cleanLink(url.l || url.v);
       var note = cleanTitle(noteCell.v);
@@ -416,31 +419,6 @@ details.card>summary{cursor:pointer;font-weight:700;color:var(--berry,#a8165f);l
       var qty = Math.max(1, Math.min(parseInt(g('qty').v, 10) || 1, 20));
       for (var i = 0; i < qty; i++) out.push({ title: title.slice(0, 100), note: note.slice(0, 200), url: link, image: image, icon: guessIcon(title) });
     }
-    return out.slice(0, 300);
-  }
-
-  // Texto pegado: filas de Excel (con tabuladores) o una línea por regalo
-  function parseBulk(text) {
-    if (/\t/.test(text)) {
-      return fromTable(parseDelimited(text, '\t').map(function (r) { return r.map(function (v) { return { v: v, l: null }; }); }));
-    }
-    var out = [];
-    text.split(/\r?\n/).forEach(function (raw) {
-      var line = raw.replace(/[\u200e\u200f]/g, '').trim();
-      if (!line) return;
-      line = line.replace(/^(?:[-*•·▪►»>✔✅☑✓]|\d{1,3}\s*[.)\-:])\s*/u, '').replace(/^[\u{1F300}-\u{1FAFF}\u2600-\u27BF\uFE0F\s]+/u, '').trim();
-      if (!line || /:\s*$/.test(line)) return; // encabezados como "Lista de regalos:"
-      var title = line, note = '';
-      var m = /^(.+?)(?:\s+[-–—]\s+|\s*\|\s*|:\s+)(.+)$/.exec(line);
-      if (m) { title = m[1].trim(); note = m[2].trim(); }
-      var qty = 1, q;
-      if ((q = /^(\d{1,2})\s*[xX×]\s+(.+)$/.exec(title))) { qty = +q[1]; title = q[2].trim(); }
-      else if ((q = /^(.+?)\s*[xX×]\s*(\d{1,2})$/.exec(title))) { qty = +q[2]; title = q[1].trim(); }
-      else if (note && (q = /^[xX×]\s*(\d{1,2})$/.exec(note))) { qty = +q[1]; note = ''; }
-      if (!title) return;
-      qty = Math.max(1, Math.min(qty, 20));
-      for (var i = 0; i < qty; i++) out.push({ title: title.slice(0, 100), note: note.slice(0, 200), url: '', image: '', icon: guessIcon(title) });
-    });
     return out.slice(0, 300);
   }
 
@@ -473,13 +451,12 @@ details.card>summary{cursor:pointer;font-weight:700;color:var(--berry,#a8165f);l
     $('bulkGo').disabled = !n;
     $('bulkGo').textContent = n ? 'Agregar ' + n + (n === 1 ? ' regalo' : ' regalos') + ' a la lista' : 'Agregar a la lista';
   }
-  $('bulkText').addEventListener('input', function () { $('bulkFile').value = ''; showBulk(parseBulk(this.value)); });
   $('bulkSkip').addEventListener('change', function () { showBulk(bulkItems); });
   $('bulkFile').addEventListener('change', function () {
     var f = this.files && this.files[0]; if (!f) return;
     $('bulkMsg').textContent = ''; $('bulkMsg').style.color = '';
     var ext = (f.name.split('.').pop() || '').toLowerCase();
-    var done = function (items) { $('bulkText').value = ''; showBulk(items); if (!items.length) $('bulkMsg').textContent = 'No encontré regalos en ese archivo. Revisa que tenga una columna "Regalo".'; };
+    var done = function (items) { showBulk(items); if (!items.length) $('bulkMsg').textContent = 'No encontré regalos en el archivo. Llena al menos una fila debajo de los encabezados (y borra la fila de ejemplo).'; };
     var fail = function (e) { $('bulkFile').value = ''; showBulk([]); $('bulkMsg').textContent = e.message || 'No se pudo leer el archivo'; };
     if (ext === 'xlsx') {
       f.arrayBuffer().then(parseXlsx).then(function (rows) { done(fromTable(rows)); }).catch(fail);
@@ -494,7 +471,7 @@ details.card>summary{cursor:pointer;font-weight:700;color:var(--berry,#a8165f);l
     if (!bulkToSend.length) return;
     var btn = this; btn.disabled = true; btn.textContent = 'Agregando…'; $('bulkMsg').textContent = '';
     api('POST', '/api/admin/gifts', { bulk: bulkToSend }).then(function (d) {
-      $('bulkText').value = ''; $('bulkFile').value = '';
+      $('bulkFile').value = '';
       return load().then(function () { showBulk([]); $('bulkMsg').style.color = '#1b7f4c'; $('bulkMsg').textContent = '¡Listo! Se agregaron ' + d.added + ' regalos.'; });
     }).catch(function (e) { $('bulkMsg').style.color = ''; $('bulkMsg').textContent = e.message; showBulk(bulkItems); });
   });
